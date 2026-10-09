@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hudson Highlands Day Trip</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='18' r='11' fill='%23c8641e'/%3E%3Crect x='14.5' y='3' width='3' height='7' rx='1.5' fill='%233d5a45'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+:root{
+  --parchment:#f7f3e9; --parchment-dim:#efe9d8; --ink:#1c2b3a;
+  --brick:#a8302a; --pumpkin:#c8641e; --verdigris:#3d5a45; --brass:#c9a227;
+  --line:#1c2b3a24; --card:#ffffff; --muted:#1c2b3a99; --soft:#1c2b3ac7;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --parchment:#14191f; --parchment-dim:#1d242c; --ink:#e9e4d6; --line:#e9e4d624;
+    --card:#1a2028; --muted:#e9e4d699; --soft:#e9e4d6c7;
+  }
+}
+:root[data-theme="dark"]{
+  --parchment:#14191f; --parchment-dim:#1d242c; --ink:#e9e4d6; --line:#e9e4d624;
+  --card:#1a2028; --muted:#e9e4d699; --soft:#e9e4d6c7;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--parchment);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:inherit;color:inherit}
+a{color:inherit}
+.app{min-height:100vh;display:flex;flex-direction:column}
+
+.masthead{background:#1c2b3a;color:#f7f3e9;background-image:radial-gradient(at 100% 0,#c8641e40,#0000 60%);padding:2.75rem 1.5rem 2.25rem}
+.masthead-inner{max-width:1180px;margin:0 auto}
+.eyebrow{display:block;letter-spacing:.16em;text-transform:uppercase;color:var(--brass);margin-bottom:.6rem;font-family:"JetBrains Mono",monospace;font-size:.7rem}
+.masthead h1{font-family:Fraunces,serif;font-optical-sizing:auto;letter-spacing:-.01em;color:var(--brass);margin:0 0 .5rem;font-size:clamp(2rem,4.5vw,3.4rem);font-weight:600;line-height:1.02}
+.dek{color:#f7f3e9b8;max-width:46ch;margin:0;font-size:1rem;line-height:1.5}
+
+.prep{max-width:1180px;margin:0 auto;width:100%;padding:1.1rem 1.5rem 0}
+.prep-box{border:1px dashed var(--line);border-radius:10px;padding:.8rem 1rem;display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;align-items:baseline}
+.prep-title{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--pumpkin);font-weight:500}
+.prep-item{font-size:.86rem;color:var(--soft)}
+.prep-item b{color:var(--ink);font-weight:600}
+
+.day-tabs{border-bottom:1px solid var(--line);display:flex;width:100%;max-width:1180px;margin:1rem auto 0}
+.day-tab{flex:1;text-align:left;background:none;border:none;border-bottom:3px solid transparent;padding:1rem 1rem .85rem;display:flex;flex-direction:column;gap:.15rem;transition:border-color .15s,background .15s}
+.day-tab:hover{background:var(--parchment-dim)}
+.day-tab.active{border-bottom-color:var(--tab-color)}
+.day-tab-label{font-family:Fraunces,serif;font-size:1.15rem;font-weight:600}
+.day-tab.active .day-tab-label{color:var(--tab-color)}
+.day-tab-sub{letter-spacing:.04em;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:.7rem}
+
+.layout{flex:1;display:grid;grid-template-columns:minmax(320px,420px) 1fr;align-items:start;gap:1.5rem;width:100%;max-width:1180px;margin:0 auto;padding:1.5rem}
+@media (max-width:860px){.layout{grid-template-columns:1fr;gap:1rem;padding:1rem}.map-pane{order:-1}.prep{padding:1rem 1rem 0}}
+
+.stop-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.6rem}
+.stop{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;display:flex;gap:.85rem;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s}
+.stop:hover{border-color:var(--stop-color);transform:translateY(-1px);box-shadow:0 4px 14px #1c2b3a14}
+.stop.active{border-color:var(--stop-color);background:var(--parchment-dim)}
+.stop.dinner{border-left:4px solid var(--stop-color)}
+.stop-num{flex-shrink:0;width:26px;height:26px;margin-top:.1rem;border-radius:50%;background:var(--stop-color);color:#fff;display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:500}
+.stop-body{min-width:0}
+.stop-meta{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline;margin-bottom:.2rem;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:.72rem}
+.stop-time{color:var(--ink);font-weight:500}
+.tag{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--stop-color);border-radius:4px;padding:.1rem .35rem}
+.stop-name{font-family:Fraunces,serif;font-size:1.08rem;font-weight:600;line-height:1.25;margin-bottom:.15rem}
+.stop-addr{color:var(--muted);font-size:.8rem;margin-bottom:.35rem}
+.stop-note{color:var(--soft);font-size:.86rem;line-height:1.45;margin-bottom:.5rem}
+.stop-links{display:flex;gap:1rem;flex-wrap:wrap}
+.stop-link{font-size:.78rem;font-weight:600;text-decoration:none;border-bottom:1px solid;padding-bottom:1px}
+
+.map-pane{position:sticky;top:1.5rem}
+.map-frame{height:640px;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 8px 28px #1c2b3a1a}
+@media (max-width:860px){.map-pane{position:static}.map-frame{height:320px}}
+
+.pin{width:28px;height:28px;background:var(--pin-color);color:#fff;border:2px solid #fff;border-radius:50% 50% 50% 0;display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:600;transform:rotate(-45deg);transform-origin:bottom;box-shadow:0 2px 6px #0000004d;transition:transform .15s,box-shadow .15s}
+.pin span{display:block;transform:rotate(45deg)}
+.pin-active{transform:rotate(-45deg) scale(1.18);box-shadow:0 3px 10px #00000073}
+.leaflet-popup-content-wrapper{border-radius:10px;font-family:Inter,sans-serif}
+.leaflet-popup-content{margin:.8rem .9rem}
+.popup-time{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.03em;text-transform:uppercase;color:#1c2b3a99;margin-bottom:.2rem}
+.popup-name{font-family:Fraunces,serif;font-size:1.02rem;font-weight:600;color:#1c2b3a;margin-bottom:.15rem}
+.popup-addr{font-size:.78rem;color:#1c2b3aa6;margin-bottom:.5rem}
+.popup-link{color:#a8302a;font-size:.78rem;font-weight:600;text-decoration:none}
+.leaflet-control-zoom a{color:#1c2b3a!important}
+
+.foot{text-align:center;color:var(--muted);padding:1.25rem 1rem 2rem;font-family:"JetBrains Mono",monospace;font-size:.72rem}
+.foot-dot{color:var(--brass);margin:0 .5rem}
+@media (prefers-reduced-motion:reduce){.stop,.day-tab,.pin{transition:none!important}}
+.stop:focus-visible,.day-tab:focus-visible,.stop-link:focus-visible{outline:2px solid var(--brick);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="masthead">
+    <div class="masthead-inner">
+      <span class="eyebrow">An Itinerary, Mapped · Saturday, Oct 10</span>
+      <h1>Hudson Highlands Day Trip</h1>
+      <p class="dek">Apples in Rockland, the oldest lighthouse on the Hudson, a Federal-style mansion over West Point, and a walk down Cold Spring's Main Street. Leave Bay Shore by 8:45.</p>
+    </div>
+  </header>
+
+  <section class="prep" aria-label="Before you go">
+    <div class="prep-box">
+      <span class="prep-title">Before you go</span>
+      <span class="prep-item"><b>Booked:</b> Boscobel house tour, 3:00 to 4:00</span>
+      <span class="prep-item"><b>Bring cash</b> for Dr. Davies</span>
+      <span class="prep-item"><b>Call ahead</b> on dinner hours</span>
+      <span class="prep-item"><b>Pack</b> a picnic lunch for Stony Point</span>
+    </div>
+  </section>
+
+  <nav class="day-tabs" id="tabs" aria-label="Dinner options"></nav>
+
+  <main class="layout">
+    <section class="itinerary"><ol class="stop-list" id="stops"></ol></section>
+    <aside class="map-pane"><div class="map-frame" id="map" role="region" aria-label="Map of stops"></div></aside>
+  </main>
+
+  <footer class="foot">Bay Shore → Hudson Highlands → home<span class="foot-dot">●</span>~1h15 out, ~1h45 back<span class="foot-dot">●</span>Check hours before you go</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const shared = [
+  { name:"Dr. Davies Farm", time:"10:00 AM", mode:"Drive · ~1h15 from Bay Shore",
+    address:"306 Route 304, Congers, NY 10920", lat:41.1711, lng:-73.9508,
+    url:"https://www.drdaviesfarm.com/",
+    note:"Family run since 1891. Apple picking, hayrides and a pumpkin patch. Historically cash only, so bring cash. You have until about 11:45, so no rush. Grab cider and donuts for the picnic." },
+  { name:"Stony Point Battlefield & Lighthouse", time:"12:00 PM", mode:"Drive · 15 min",
+    address:"44 Battlefield Rd, Stony Point, NY 10980", lat:41.2418, lng:-73.9748,
+    url:"https://parks.ny.gov/visit/historic-sites/stony-point-battlefield-state-historic-site",
+    note:"Loop out to the 1826 lighthouse, oldest on the Hudson and 200 years old this year. Site of Anthony Wayne's midnight attack in 1779. Free. Picnic here (carry in, carry out)." },
+  { name:"Bear Mountain Bridge", time:"2:00 PM", mode:"Drive · 20 min up 9W",
+    address:"US-6 / US-202 over the Hudson", lat:41.3199, lng:-73.9821,
+    note:"Cross to the east side. Worth a 5-minute stop for the view down the river." },
+  { name:"Boscobel House & Gardens", time:"2:30 PM", mode:"Drive · 15 min",
+    address:"1601 Route 9D, Garrison, NY 10524", lat:41.4121, lng:-73.9389,
+    url:"https://www.boscobel.org/",
+    note:"Booked: guided house tour 3:00 to 4:00. Arrive by 2:30 to walk the gardens and the West Point overlook first. Grounds have closed around 4:30, so do the outdoor part before the tour." },
+  { name:"Cold Spring Main Street", time:"4:15 PM", mode:"Drive · 5 min",
+    address:"Main St, Cold Spring, NY 10516", lat:41.4186, lng:-73.9555,
+    note:"Antique shops and small stores. Walk down to the riverfront at the end of Main Street. Parking gets tight, try the side streets. About 90 minutes here." }
+];
+
+const options = [
+  { id:"roundup", label:"Option A · Round Up BBQ", sub:"Stay local · casual Texas BBQ", color:"#A8302A",
+    stops:[...shared,
+      { name:"Round Up Texas BBQ", time:"6:00 PM", mode:"Drive · 5 min", dinner:true,
+        address:"2741 Route 9, Cold Spring, NY 10516", lat:41.4313, lng:-73.9166, phone:"(845) 809-5557",
+        note:"Brisket, ribs, chicken and catfish, plus burgers, chicken fingers and hot dogs. Kids menu. One listing shows a 7:30 PM close, so call to confirm and leave Main Street by 5:50. Then about 1h45 home." }
+    ]},
+  { id:"peekskill", label:"Option B · Peekskill Brewery", sub:"Dinner on the way home", color:"#3D5A45",
+    stops:[...shared,
+      { name:"The Peekskill Brewery", time:"6:15 PM", mode:"Drive · 25 min south", dinner:true,
+        address:"47-53 South Water St, Peekskill, NY 10566", lat:41.2867, lng:-73.9293,
+        note:"Wood-fired pizza, burgers and wings with a kids menu. Families sit upstairs (downstairs is 21+). Knocks a chunk off the drive home." }
+    ]}
+];
+
+const tabsEl = document.getElementById("tabs");
+const stopsEl = document.getElementById("stops");
+let active = 0, activeStop = null, markers = [];
+
+const map = L.map("map", { scrollWheelZoom:false, zoomControl:true });
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains:"abcd", maxZoom:19
+}).addTo(map);
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dirUrl = s => "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(s.address.startsWith("US-6") ? "Bear Mountain Bridge, NY" : s.name + ", " + s.address);
+
+function pinIcon(n, color, on){
+  return L.divIcon({ className:"", iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-26],
+    html:`<div class="pin ${on?"pin-active":""}" style="--pin-color:${color}"><span>${n}</span></div>` });
+}
+
+function renderTabs(){
+  tabsEl.innerHTML = "";
+  options.forEach((o,i)=>{
+    const b = document.createElement("button");
+    b.className = "day-tab" + (i===active ? " active" : "");
+    b.style.setProperty("--tab-color", o.color);
+    b.innerHTML = `<span class="day-tab-label">${esc(o.label)}</span><span class="day-tab-sub">${esc(o.sub)}</span>`;
+    b.onclick = () => { active = i; activeStop = null; render(); };
+    tabsEl.appendChild(b);
+  });
+}
+
+function renderStops(){
+  const o = options[active];
+  stopsEl.innerHTML = "";
+  o.stops.forEach((s,i)=>{
+    const li = document.createElement("li");
+    li.className = "stop" + (s.dinner ? " dinner" : "") + (activeStop===i ? " active" : "");
+    li.style.setProperty("--stop-color", o.color);
+    li.tabIndex = 0;
+    const links = [
+      s.url ? `<a class="stop-link" href="${s.url}" target="_blank" rel="noopener noreferrer">Website</a>` : "",
+      `<a class="stop-link" href="${dirUrl(s)}" target="_blank" rel="noopener noreferrer">Directions</a>`,
+      s.phone ? `<a class="stop-link" href="tel:${s.phone.replace(/\D/g,"")}">${esc(s.phone)}</a>` : ""
+    ].join("");
+    li.innerHTML = `<div class="stop-num">${i+1}</div><div class="stop-body">
+      <div class="stop-meta"><span class="stop-time">${esc(s.time)}</span><span>${esc(s.mode)}</span>${s.dinner?'<span class="tag">Dinner</span>':""}</div>
+      <div class="stop-name">${esc(s.name)}</div>
+      <div class="stop-addr">${esc(s.address)}</div>
+      <div class="stop-note">${esc(s.note)}</div>
+      <div class="stop-links">${links}</div></div>`;
+    li.querySelectorAll("a").forEach(a => a.addEventListener("click", e => e.stopPropagation()));
+    li.onclick = () => select(i);
+    li.onkeydown = e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); select(i); } };
+    stopsEl.appendChild(li);
+  });
+}
+
+function renderMap(){
+  const o = options[active];
+  markers.forEach(m => m.remove()); markers = [];
+  o.stops.forEach((s,i)=>{
+    const m = L.marker([s.lat,s.lng], { icon:pinIcon(i+1, o.color, activeStop===i) }).addTo(map);
+    m.bindPopup(`<div class="popup-time">${esc(s.time)}</div><div class="popup-name">${esc(s.name)}</div><div class="popup-addr">${esc(s.address)}</div><a class="popup-link" href="${dirUrl(s)}" target="_blank" rel="noopener noreferrer">Directions →</a>`);
+    m.on("click", () => select(i, true));
+    markers.push(m);
+  });
+  map.fitBounds(L.latLngBounds(o.stops.map(s=>[s.lat,s.lng])), { padding:[30,30] });
+}
+
+function select(i, fromMap){
+  activeStop = i;
+  const o = options[active];
+  renderStops();
+  markers.forEach((m,j)=> m.setIcon(pinIcon(j+1, o.color, j===i)));
+  const s = o.stops[i];
+  map.flyTo([s.lat,s.lng], 14, { duration:.6 });
+  markers[i].openPopup();
+  if (fromMap) stopsEl.children[i].scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+
+function render(){ renderTabs(); renderStops(); renderMap(); }
+render();
+window.addEventListener("resize", () => map.invalidateSize());
+</script>
+</body>
+</html>
